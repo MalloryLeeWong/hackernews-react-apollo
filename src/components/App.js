@@ -12,7 +12,7 @@ class App extends Component {
         <div className="ph3 pv1 background-gray">
           <Switch>
             <Route exact path="/" component={LinkList} />
-            <Route exact path="/" component={CreateLink} />
+            <Route exact path="/create" component={CreateLink} />
           </Switch>
         </div>
       </div>
