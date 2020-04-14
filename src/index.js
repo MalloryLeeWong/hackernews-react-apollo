@@ -12,7 +12,6 @@ import { createHttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { BrowserRouter } from 'react-router-dom';
 import { AUTH_TOKEN } from './constants';
-import {AUTH_TOKEN} from './constants'
 
 // create httpLink that connects ApolloClient instance with  GraphQL API
 // your GraphQL server will run on localhost 4000
@@ -35,7 +34,7 @@ const authLink = setContext((_, { headers }) => {
 
 // create ApolloClient instance by passing the httpLinka nd new instance of InMemoryCache
 const client = new ApolloClient({
-  link: authLink.concat(httpLink)
+  link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
 });
 
