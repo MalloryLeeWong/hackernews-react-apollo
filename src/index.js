@@ -12,6 +12,9 @@ import { createHttpLink } from 'apollo-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { BrowserRouter } from 'react-router-dom';
 import { AUTH_TOKEN } from './constants';
+import { split } from 'apollo-link';
+import { WebSocketLink } from 'apollo-link-ws';
+import { getMainDefinition } from 'apollo-utilities';
 
 // create httpLink that connects ApolloClient instance with  GraphQL API
 // your GraphQL server will run on localhost 4000
@@ -32,9 +35,33 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-// create ApolloClient instance by passing the httpLinka nd new instance of InMemoryCache
+// instantiate WebSocketLink for WebSocket connection to know the subscriptions endpoint (similar to HTTP except uses ws instead of http protocol)
+// authenticate websocket connection with user's token
+const wsLink = new WebSocketLink({
+  uri: `ws://localhost:4000`,
+  options: {
+    reconnect: true,
+    connectionParams: {
+      authToken: localStorage.getItem(AUTH_TOKEN),
+    },
+  },
+});
+
+// split is for routing of requests when using websocket
+// takes 3 args, test (returns boolean whether req is a susbcription), other 2 are a type of ApolloLink, wsLink, and authLink
+// if test returns true, req forwards to 2nd arg wsLink, which if false (means is a query or mutation), goes to 3rd arg authLink
+const link = split(
+  ({ query }) => {
+    const { kind, operation } = getMainDefinition(query);
+    return kind === 'OperationDefinition' && operation === 'subscription';
+  },
+  wsLink,
+  authLink.concat(httpLink)
+);
+
+// create ApolloClient instance using the link which combines all the individual links
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link,
   cache: new InMemoryCache(),
 });
 
