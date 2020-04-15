@@ -2,13 +2,17 @@ import React, { Component } from 'react';
 import Link from './Link';
 import { Query } from 'react-apollo';
 import gql from 'graphql-tag';
+import LINKS_PER_PAGE from '../constants';
 
 // create JS constant that stores the query
 // gql parser function used to parase plain string that contains the GraphQL code
 // use template literal
+// query accepts args used for pagination and ordering
+// skip is offset where query will start (skips 1st item)
+// first is max items to load from list
 export const FEED_QUERY = gql`
-  {
-    feed {
+  query FeedQuery($first: Int, $skip: Int, $orderBy: LinkOrderByInput) {
+    feed(first: $first, skip: $skip, orderBy: $orderBy) {
       links {
         id
         createdAt
@@ -25,6 +29,7 @@ export const FEED_QUERY = gql`
           }
         }
       }
+      count
     }
   }
 `;
@@ -117,14 +122,26 @@ class LinkList extends Component {
     });
   };
 
+  // for pagination, to pass args to variables prop in Query component
+  _getQueryVariables = () => {
+    const isNewPage = this.props.location.pathname.includes('new');
+    const page = parseInt(this.props.match.params.page, 10);
+
+    const skip = isNewPage ? (page - 1) * LINKS_PER_PAGE : 0;
+    const first = isNewPage ? LINKS_PER_PAGE : 100;
+    const orderBy = isNewPage ? 'createdAt_DESC' : null;
+    return { first, skip, orderBy };
+  };
+
   render() {
     // wrap the returned code in Query component, passing it the query constant
     // Query component will fetch data for you under the hood
     // Apollo injects several props into the render prop function: loading, error, data
     // use subscribeToMore in Query component as prop in the component’s render prop function
+    // variables prop now gets first, skip, orderBy values based on current page this.props.match.params.page used to calculate pagination
 
     return (
-      <Query query={FEED_QUERY}>
+      <Query query={FEED_QUERY} variables={this._getQueryVariables}>
         {({ loading, error, data, subscribeToMore }) => {
           if (loading) return <div>Fetching</div>;
           if (error) return <div>Error</div>;
